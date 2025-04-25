@@ -3,7 +3,10 @@
     <header class="room-header mb-3">
       <h1>{{ roomName }}</h1>
       <p class="text-secondary">ID: {{ roomId }} | Seu ID: {{ playerId }}</p>
-      <button @click="leaveRoom" class="btn btn-secondary btn-sm">Sair da Sala</button>
+      <div class="header-actions">
+        <button @click="toggleQRCodeModal" class="btn btn-primary btn-sm mr-2">Compartilhar via QR Code</button>
+        <button @click="leaveRoom" class="btn btn-secondary btn-sm">Sair da Sala</button>
+      </div>
     </header>
 
     <div class="room-layout">
@@ -111,6 +114,19 @@
         </section>
       </main>
     </div>
+
+    <!-- QR Code Modal -->
+    <div v-if="showQRCodeModal" class="modal-overlay" @click.self="toggleQRCodeModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Compartilhar Sala</h3>
+          <button @click="toggleQRCodeModal" class="close-button">&times;</button>
+        </div>
+        <div class="modal-body">
+          <QRCodeShare :roomId="roomId" />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -120,6 +136,7 @@ import { useRoute, useRouter } from 'vue-router';
 import socket from '../services/socket';
 import { getDeckValues } from '../utils/decks';
 import { DECKS } from '../utils/decks'; // Import standard decks
+import QRCodeShare from '../components/QRCodeShare.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -134,6 +151,14 @@ const moderatorId = ref(null); // Add state for moderator ID
 const currentRoundStatus = ref('waiting'); // Add state for round status
 const roundVotes = ref({}); // Add state for revealed votes
 const gameState = ref({}); // Add state for game state
+
+// QR Code modal state
+const showQRCodeModal = ref(false);
+
+// Toggle QR Code modal
+const toggleQRCodeModal = () => {
+  showQRCodeModal.value = !showQRCodeModal.value;
+};
 
 // --- Computed Properties ---
 const currentDeckCards = computed(() => {
@@ -385,17 +410,17 @@ onUnmounted(() => {
   background-color: var(--color-success);
 }
 
-.moderator-badge,
+.moderator-badge {
+  display: inline-block;
+  margin-left: 5px;
+}
+
 .voted-badge {
   margin-left: auto; /* Empurra para a direita */
   font-size: var(--font-size-small);
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-sm);
   margin-left: var(--spacing-sm);
-}
-
-.moderator-badge {
-   /* Sem fundo específico, o emoji é suficiente */
 }
 
 .voted-badge {
@@ -519,4 +544,58 @@ onUnmounted(() => {
   font-size: var(--font-size-small);
 }
 
+/* Header actions */
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+}
+
+.modal-body {
+  padding: 20px;
+}
 </style>

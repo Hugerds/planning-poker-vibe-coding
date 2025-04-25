@@ -1,6 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const Game = require('../models/Game');
 const Player = require('../models/Player');
+const { generateQRCodeInviteUrl, validateUrlToken, deleteUrlToken } = require('../services/urlService');
 
 // In-memory store for active rooms
 const rooms = new Map(); // Map<roomId, Game>
@@ -30,7 +31,7 @@ function handleCreateRoom(socket, io, data) {
 
 function handleJoinRoom(socket, io, data) {
     console.log('handleJoinRoom received data:', data); // Log incoming data
-    const { playerName, roomId, isSpectator = false } = data; // Destructure with default for isSpectator
+    const { playerName, roomId, isSpectator = false, source } = data; // Destructure with default for isSpectator
     const game = rooms.get(roomId);
 
     if (!game) {
@@ -286,13 +287,103 @@ function handleLeaveRoom(socket, io, data) {
     // socket.playerId = null;
 }
 
+function handleGenerateQRCode(socket, io, data) {
+    const { roomId } = data;
+    const game = rooms.get(roomId);
+    
+    if (!game) {
+        socket.emit('error', { message: 'Sala não encontrada.' });
+        return;
+    }
+    
+    const token = generateQRCodeInviteUrl(roomId);
+    
+    // Obtenha o host e protocolo do cliente
+    const headers = socket.handshake.headers;
+    const origin = headers.origin || '';
+    
+    // Tente extrair o host e protocolo da origem
+    let clientHost = 'localhost:8080';
+    let protocol = 'http';
+    
+    try {
+        if (origin) {
+            const url = new URL(origin);
+            clientHost = url.host;
+            protocol = url.protocol.replace(':', '');
+        }
+    } catch (err) {
+        console.error('Erro ao analisar a origem:', err);
+    }
+    
+    // Construa o URL completo que aponta diretamente para a página de entrada via QR code
+    const inviteUrl = `${protocol}://${clientHost}/invite/${token}`;
+    
+    socket.emit('qrcode_generated', { inviteUrl });
+}
+
+function handleJoinRoomViaQRCode(socket, io, data) {
+    const { playerName, roomId, token } = data;
+    
+    // Validar o token antes de permitir a entrada na sala
+    const urlData = validateUrlToken(token);
+    
+    if (!urlData || urlData.type !== 'qrcode-invite' || urlData.roomId !== roomId) {
+        socket.emit('error', { message: 'Token inválido ou expirado para esta sala.' });
+        return;
+    }
+    
+    // Reuse the existing join room logic but mark the player as coming from QR code
+    handleJoinRoom(socket, io, {
+        playerName,
+        roomId,
+        isSpectator: false,
+        source: 'qrcode'
+    });
+    
+    // Opcionalmente, podemos remover o token após o uso para maior segurança
+    // deleteUrlToken(token);
+}
+
+function handleGetRoomIdFromToken(socket, io, data) {
+    const { token } = data;
+    
+    if (!token) {
+        socket.emit('room_id_from_token', { error: 'Token não fornecido' });
+        return;
+    }
+    
+    // Validar o token e obter os dados associados
+    const urlData = validateUrlToken(token);
+    
+    if (!urlData || urlData.type !== 'qrcode-invite') {
+        socket.emit('room_id_from_token', { error: 'Token inválido ou expirado' });
+        return;
+    }
+    
+    // Verificar se a sala ainda existe
+    const roomId = urlData.roomId;
+    const game = rooms.get(roomId);
+    
+    if (!game) {
+        socket.emit('room_id_from_token', { error: 'Sala não encontrada ou expirada' });
+        return;
+    }
+    
+    // Retornar o ID e o nome da sala
+    socket.emit('room_id_from_token', { roomId, roomName: game.name });
+}
+
 module.exports = {
     handleCreateRoom,
     handleJoinRoom,
     handleDisconnect,
     handleStartRound,
     handleResetRound,
-    handleSubmitVote, 
+    handleSubmitVote,
     handleRevealVotes,
-    handleLeaveRoom
+    handleLeaveRoom,
+    handleGenerateQRCode,
+    handleJoinRoomViaQRCode,
+    handleGetRoomIdFromToken
 };

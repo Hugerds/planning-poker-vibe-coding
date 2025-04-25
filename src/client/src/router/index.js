@@ -13,6 +13,23 @@ const routes = [
     name: 'Room', // Name for navigation
     component: () => import('../views/RoomView.vue'), // Lazy load room view
     props: true // Pass route params as props to the component (optional but convenient)
+  },
+  {
+    path: '/join/qrcode/:roomId', // QR code join route
+    name: 'QRCodeJoin',
+    component: () => import('../views/QRCodeJoinView.vue'),
+    props: true
+  },
+  // Rota para lidar com redirecionamentos de convite via QR code
+  {
+    path: '/invite/:token',
+    name: 'QRCodeInvite',
+    component: () => import('../views/QRCodeJoinView.vue'),
+    props: route => ({
+      token: route.params.token,
+      // Não temos o roomId ainda, será obtido pelo token
+      roomId: null
+    })
   }
 ]
 

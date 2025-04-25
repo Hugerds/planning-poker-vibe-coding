@@ -1,6 +1,8 @@
 const express = require('express');
 const http = require('http');
+const path = require('path');
 const { initializeSocket } = require('./socket');
+const { handleQRCodeRedirect } = require('./controllers/urlController');
 
 const app = express();
 const server = http.createServer(app);
@@ -10,12 +12,26 @@ const io = initializeSocket(server);
 
 const PORT = process.env.PORT || 3000;
 
+// Middleware for parsing JSON requests
+app.use(express.json());
+
+// Servir arquivos estáticos do cliente
+const clientPath = path.join(__dirname, '../client/dist');
+app.use(express.static(clientPath));
+
 // Basic route for testing server is up
 app.get('/', (req, res) => {
   res.send('Servidor Planning Poker está rodando!');
 });
 
-// Middleware could be added here if needed (e.g., express.json() for REST APIs later)
+// QR Code redirect route
+app.get('/invite/:token', handleQRCodeRedirect);
+
+// Rota para lidar com todas as outras requisições e servir o index.html
+// para que o Vue Router possa lidar com as rotas no lado do cliente
+app.get('*', (req, res) => {
+  res.sendFile(path.join(clientPath, 'index.html'));
+});
 
 server.listen(PORT, () => {
   console.log(`Servidor escutando na porta ${PORT}`);

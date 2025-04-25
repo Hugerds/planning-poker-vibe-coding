@@ -17,6 +17,11 @@ function initializeSocket(server) {
         socket.on('join_room', (data) => roomController.handleJoinRoom(socket, io, data));
         socket.on('leave_room', (data) => roomController.handleLeaveRoom(socket, io, data));
 
+        // QR Code functionality
+        socket.on('generate_qrcode', (data) => roomController.handleGenerateQRCode(socket, io, data));
+        socket.on('join_room_via_qrcode', (data) => roomController.handleJoinRoomViaQRCode(socket, io, data));
+        socket.on('get_room_id_from_token', (data) => roomController.handleGetRoomIdFromToken(socket, io, data));
+
         // Game Actions
         socket.on('submit_vote', (data) => roomController.handleSubmitVote(socket, io, data));
         socket.on('reveal_votes', (data) => roomController.handleRevealVotes(socket, io, data));
