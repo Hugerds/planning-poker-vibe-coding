@@ -7,7 +7,7 @@ const socket = ref(null);
 const isConnected = ref(false);
 
 // URL do servidor Socket.IO (ajuste se necessário)
-const SERVER_URL = 'https://late-snakes-go.loca.lt'; // Ou a URL/porta do seu servidor
+const SERVER_URL = import.meta.env.VITE_API_URL;
 
 /**
  * Estabelece a conexão com o servidor Socket.IO.
