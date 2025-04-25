@@ -24,8 +24,8 @@ app.get('/', (req, res) => {
   res.send('Servidor Planning Poker está rodando!');
 });
 
-// QR Code redirect route
-app.get('/invite/:token', handleQRCodeRedirect);
+// REMOVED: QR Code redirect route - Let the SPA handle this route
+// app.get('/invite/:token', handleQRCodeRedirect);
 
 // Rota para lidar com todas as outras requisições e servir o index.html
 // para que o Vue Router possa lidar com as rotas no lado do cliente
