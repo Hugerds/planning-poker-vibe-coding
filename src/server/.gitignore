@@ -5,3 +5,4 @@
 # Example: Temporary files or specific logs
 # *.tmp
 # /server-logs/
+node_modules

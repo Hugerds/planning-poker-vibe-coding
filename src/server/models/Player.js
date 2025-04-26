@@ -1,11 +1,14 @@
 class Player {
-    constructor(id, name, isSpectator = false) {
+    constructor(id, name, isSpectator = false, runrunAppKey = null, runrunUserToken = null) {
         this.id = id; // Corresponds to socket.id initially
         this.name = name;
         this.isSpectator = isSpectator;
         this.isConnected = true;
         this.hasVoted = false;
         this.vote = null;
+        // Store RunRun tokens (only used on the server)
+        this.runrunAppKey = runrunAppKey;
+        this.runrunUserToken = runrunUserToken;
     }
 
     // Method to mark player as having voted

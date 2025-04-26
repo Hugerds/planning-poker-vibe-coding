@@ -3,6 +3,7 @@ const http = require('http');
 const path = require('path');
 const { initializeSocket } = require('./socket');
 const { handleQRCodeRedirect } = require('./controllers/urlController');
+const runrunController = require('./controllers/runrunController');
 
 const app = express();
 const server = http.createServer(app);
@@ -26,6 +27,12 @@ app.get('/', (req, res) => {
 
 // REMOVED: QR Code redirect route - Let the SPA handle this route
 // app.get('/invite/:token', handleQRCodeRedirect);
+
+// --- RunRun.it API Routes ---
+app.get('/api/runrun/boards', runrunController.handleGetBoards);
+app.get('/api/runrun/boards/:boardId/tasks', runrunController.handleGetTasksByBoard);
+app.get('/api/runrun/tasks/:taskId/description', runrunController.handleGetTaskDescription);
+// -----------------------------
 
 // Rota para lidar com todas as outras requisições e servir o index.html
 // para que o Vue Router possa lidar com as rotas no lado do cliente

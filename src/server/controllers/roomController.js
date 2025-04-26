@@ -8,10 +8,10 @@ const rooms = new Map(); // Map<roomId, Game>
 
 function handleCreateRoom(socket, io, data) {
     console.log('handleCreateRoom received data:', data);
-    const { roomName, playerName, deckType = 'fibonacci', customDeckValues = null, settings = {} } = data;
+    const { roomName, playerName, deckType = 'fibonacci', customDeckValues = null, settings = {}, runrunAppKey, runrunUserToken } = data;
     const roomId = uuidv4();
     const playerId = socket.id; // Use socket ID as player ID for simplicity
-    const moderator = new Player(playerId, playerName || `Moderador_${roomId.substring(0, 4)}`);
+    const moderator = new Player(playerId, playerName || `Moderador_${roomId.substring(0, 4)}`, false, runrunAppKey, runrunUserToken);
     moderator.isModerator = true; // Mark as moderator
     const game = new Game(roomId, roomName, moderator.id, deckType, customDeckValues, settings);
     game.addPlayer(moderator);
@@ -31,7 +31,7 @@ function handleCreateRoom(socket, io, data) {
 
 function handleJoinRoom(socket, io, data) {
     console.log('handleJoinRoom received data:', data); // Log incoming data
-    const { playerName, roomId, isSpectator = false, source } = data; // Destructure with default for isSpectator
+    const { playerName, roomId, isSpectator = false, source, runrunAppKey, runrunUserToken } = data;
     const game = rooms.get(roomId);
 
     if (!game) {
@@ -44,8 +44,10 @@ function handleJoinRoom(socket, io, data) {
     // Check if player already exists (e.g., reconnection attempt with same socket id? unlikely here but good practice)
     let player = game.players.find(p => p.id === playerId);
     if (!player) {
-        const newPlayer = new Player(playerId, playerName, isSpectator);
+        // Pass tokens to Player constructor for the new player
+        const newPlayer = new Player(playerId, playerName, isSpectator, runrunAppKey, runrunUserToken);
         game.addPlayer(newPlayer);
+        player = newPlayer; // Assign newPlayer to player for subsequent logic
     } else {
         player.isConnected = true; // Mark as connected if rejoining
         player.name = playerName || player.name; // Update name if provided
@@ -57,7 +59,7 @@ function handleJoinRoom(socket, io, data) {
 
     console.log(`${playerName || 'Jogador'} entrou na sala ${roomId}`);
     // Notify others in the room
-    socket.to(roomId).emit('player_joined', { player });
+    socket.to(roomId).emit('player_joined', { player: player.getSerializableState() });
     // Send current game state to the joining player
     socket.emit('room_joined', { roomId, playerId, gameState: game.getSerializableState() });
 
